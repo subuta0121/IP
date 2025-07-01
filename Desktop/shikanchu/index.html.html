@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALBAインプラント術前診断ゲーム (改訂版)</title>
+    <title>ALBAインプラント術前診断 (改訂版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,12 +37,11 @@
 
     <div class="container mx-auto p-4 md:p-8 max-w-4xl">
         <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">ALBAインプラント術前診断ゲーム</h1>
+            <h1 class="text-3xl md:text-4xl font-bold text-red-600">ALBAインプラント<br>術前診断</h1>
             <p class="mt-2 text-lg text-gray-600">プレイヤー：歯科医師</p>
         </header>
 
         <main id="game-container" class="space-y-8">
-            <!-- Step 1: Contraindications -->
             <div id="step1" class="bg-white p-6 rounded-lg shadow-lg">
                 <h2 class="text-2xl font-bold mb-4 step-title">Step 1: 全身状態の確認（問診）</h2>
                 <p class="mb-4">まず、インプラント治療の絶対的禁忌症に該当しないか確認します。</p>
@@ -75,7 +74,6 @@
                 <button onclick="checkContraindications()" class="mt-6 w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300">問診を完了し次へ</button>
             </div>
 
-            <!-- Step 2: Clinical Data Input -->
             <div id="step2" class="bg-white p-6 rounded-lg shadow-lg hidden">
                 <h2 class="text-2xl font-bold mb-4 step-title">Step 2: 局所状態の評価（CT読影）</h2>
                 <p class="mb-6">CT画像から得られた情報を入力してください。</p>
@@ -140,7 +138,6 @@
                  <button onclick="generateDiagnosis()" class="mt-8 w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition duration-300">診断・治療計画を立案</button>
             </div>
 
-            <!-- Step 3: Diagnosis Result -->
             <div id="step3" class="hidden">
                 <h2 class="text-2xl font-bold mb-4 step-title">診断結果・治療計画サマリー</h2>
                 <div id="diagnosis-result" class="space-y-4"></div>
@@ -151,12 +148,10 @@
 
     <script>
         // --- データベース ---
-        // カタログに存在する実際の製品長 (4mmは除外)
         const STRAUMANN_LENGTHS = [16, 14, 12, 10, 8, 6];
         const AQB_LENGTHS = [14, 12, 10, 8, 6];
         const AQB_LENGTH_CODES = { 14: 'Y', 12: 'L', 10: 'M', 8: 'S', 6: '6' };
 
-        // ゲームの状態を管理するオブジェクト
         let gameState = {};
 
         function checkContraindications() {
@@ -170,23 +165,21 @@
             }
         }
         
-        // --- インプラント選択ヘルパー関数 ---
         function getBestFitLength(availableLengths, maxLength) {
             for (const length of availableLengths) {
                 if (maxLength >= length) {
                     return length;
                 }
             }
-            return null; // 適合する長さがない
+            return null;
         }
 
         function generateDiagnosis() {
-            // ユーザーの選択を取得
             const jaw = document.getElementById('jaw').value;
             const location = document.getElementById('location').value;
             const verticalBoneValue = document.getElementById('vertical_bone').value;
-            const mesiodistalWidth = document.getElementById('mesiodistal_width').value;
-            const buccolingualWidth = document.getElementById('buccolingual_width').value;
+            const mesiodistalWidthValue = document.getElementById('mesiodistal_width').value;
+            const buccolingualWidthValue = document.getElementById('buccolingual_width').value;
             const boneQuality = document.getElementById('bone_quality').value;
             
             let diagnosis = {
@@ -198,9 +191,12 @@
 
             const vBoneMap = { '<4': 3, '4-6': 5, '7-9': 8, '10-11': 11, '>=12': 13 };
             const vBoneNum = vBoneMap[verticalBoneValue];
+            const buccolingualMap = {'<5.3': 5.2, '5.3-6.0': 5.6, '6.1-6.8': 6.4, '>=6.8': 7.0};
+            const buccolingualNum = buccolingualMap[buccolingualWidthValue];
+            const mesiodistalMap = {'<5.5': 5.4, '5.5-6.9': 6.2, '>=7.0': 7.5};
+            const mesiodistalNum = mesiodistalMap[mesiodistalWidthValue];
 
             let isAugmentationCase = false;
-            // 術式選択 (上顎) - 用語を「ソケットリフト」に統一
             if (jaw === 'maxilla' && (location === 'molar' || location === 'premolar') ) {
                 if (vBoneNum < 4) {
                     diagnosis.procedures.push('サイナスリフト（ラテラルアプローチ）を推奨');
@@ -214,16 +210,12 @@
                 }
             }
             
-            // 安全域を考慮した埋入可能長 (2mmのマージン)
             let targetLength = vBoneNum - 2;
-
-            // ***【修正点】上顎臼歯部で骨造成を行う場合は、埋入長を8mmとする***
             if (isAugmentationCase && (location === 'molar' || location === 'premolar')) {
                 targetLength = 8;
                 diagnosis.notes = "骨造成を伴うため、インプラント長は8mmを推奨します。";
             }
 
-            // 下顎の安全域チェック
             if (jaw === 'mandible') {
                  if (targetLength < 6) { 
                     diagnosis.dangers.push(`下顎管までの距離が実測値 ${vBoneNum}mm のため、安全なインプラント埋入（最低長6mm＋安全域2mm）は困難です。インプラント治療は原則禁忌と考えられます。`);
@@ -231,32 +223,48 @@
                     diagnosis.warnings.push(`下顎管までの距離が要注意です（実測値 ${vBoneNum}mm）。ショートインプラントの使用や、GBR、傾斜埋入などの高度な術式検討が必要です。`);
                 }
             }
-            
-            const buccolingualMap = {'<5.3': 5.2, '5.3-6.0': 5.6, '6.1-6.8': 6.4, '>=6.8': 7.0};
-            const buccolingualNum = buccolingualMap[buccolingualWidth];
-            const mesiodistalMap = {'<5.5': 5.4, '5.5-6.9': 6.2, '>=7.0': 7.5};
-            const mesiodistalNum = mesiodistalMap[mesiodistalWidth];
 
             if (buccolingualNum < 5.3) {
                  diagnosis.procedures.push('頬舌的骨幅が著しく不足しています。GBR（骨造成）の併用が必須です。');
             }
 
-            // --- インプラント選択ロジック (ハルシネーション防止版) ---
-            
-            // ストローマン
-            let chosenStraumannLength = getBestFitLength(STRAUMANN_LENGTHS, targetLength);
+            if (buccolingualWidthValue === '<5.3' &&
+                verticalBoneValue === '>=12' &&
+                mesiodistalWidthValue === '>=7.0' &&
+                (boneQuality === 'D3' || boneQuality === 'D4' || boneQuality === 'D5')) {
+                diagnosis.procedures.push('スプリットクレスト法を院長or柴田と相談');
+            }
+
+            let recommendedDiameterClass = null;
+
+            if (buccolingualNum >= 6.8 && mesiodistalNum >= 7.0) {
+                recommendedDiameterClass = 'wide';
+            } else if (buccolingualNum >= 6.1 && mesiodistalNum >= 7.0) {
+                recommendedDiameterClass = 'regular';
+            } else if (buccolingualNum >= 5.3 && mesiodistalNum >= 5.5) {
+                recommendedDiameterClass = 'narrow';
+            }
+
+            const chosenStraumannLength = getBestFitLength(STRAUMANN_LENGTHS, targetLength);
+            const chosenAqbLength = getBestFitLength(AQB_LENGTHS, targetLength);
+
             if (chosenStraumannLength) {
-                if (buccolingualNum >= 6.8 && mesiodistalNum >= 7.0) {
-                    diagnosis.straumann.recommendation.push(`BLT RC ø4.8 × ${chosenStraumannLength}mm`);
-                } else if (buccolingualNum >= 6.1 && mesiodistalNum >= 7.0) {
-                    diagnosis.straumann.recommendation.push(`BLT RC ø4.1 × ${chosenStraumannLength}mm`);
-                } else if (buccolingualNum >= 5.3 && mesiodistalNum >= 5.5) {
-                    diagnosis.straumann.recommendation.push(`BLT NC ø3.3 × ${chosenStraumannLength}mm`);
-                } else {
-                    diagnosis.straumann.notes.push("骨幅に適したストローマンインプラントの選択が困難です。GBRを必須とします。");
+                switch (recommendedDiameterClass) {
+                    case 'wide':
+                        diagnosis.straumann.recommendation.push(`BLT RC ø4.8 × ${chosenStraumannLength}mm`);
+                        break;
+                    case 'regular':
+                        diagnosis.straumann.recommendation.push(`BLT RC ø4.1 × ${chosenStraumannLength}mm`);
+                        break;
+                    case 'narrow':
+                        diagnosis.straumann.recommendation.push(`BLT NC ø3.3 × ${chosenStraumannLength}mm`);
+                        break;
+                    default:
+                        diagnosis.straumann.notes.push("骨幅に適したストローマンインプラントの選択が困難です。GBRを必須とします。");
+                        break;
                 }
             } else {
-                 if (diagnosis.dangers.length === 0) { // 禁忌でない場合のみ表示
+                 if (diagnosis.dangers.length === 0) {
                     diagnosis.straumann.notes.push("利用可能な垂直的骨量に適した長さのストローマンインプラントがありません。");
                  }
             }
@@ -264,37 +272,40 @@
                 diagnosis.straumann.notes.push("軟らかい骨質のため、初期固定に有利なテーパー形状（BLTなど）の選択を推奨します。");
             }
 
-            // AQB
-            let aqbDiameterCode = '';
-            let aqbDiameterValue = 0;
-            if (buccolingualNum >= 7.0) { aqbDiameterCode = 'T5'; aqbDiameterValue = 5.0;} 
-            else if (buccolingualNum >= 6.0) { aqbDiameterCode = 'T4'; aqbDiameterValue = 4.0;}
-            else if (buccolingualNum >= 5.3) { aqbDiameterCode = 'T3'; aqbDiameterValue = 3.3;}
+            if (chosenAqbLength) {
+                let aqbDiameterCode = '', aqbDiameterValue = 0;
+                switch (recommendedDiameterClass) {
+                    case 'wide':
+                        aqbDiameterCode = 'T5'; aqbDiameterValue = 5.0;
+                        break;
+                    case 'regular':
+                        aqbDiameterCode = 'T4'; aqbDiameterValue = 4.0;
+                        break;
+                    case 'narrow':
+                        aqbDiameterCode = 'T3'; aqbDiameterValue = 3.3;
+                        break;
+                }
 
-            if (aqbDiameterCode) {
-                const chosenAqbLength = getBestFitLength(AQB_LENGTHS, targetLength);
-                if (chosenAqbLength) {
-                    // ***【修正点】品番の具体例を提示***
+                if (aqbDiameterCode) {
                     const lengthCode = AQB_LENGTH_CODES[chosenAqbLength];
                     let examplePartNumber = `${aqbDiameterCode}${lengthCode}S`;
                     diagnosis.aqb.recommendation.push(`径: ${aqbDiameterCode} (ø${aqbDiameterValue}mm), 被覆部長: ${chosenAqbLength}mm (例: ${examplePartNumber})`);
                     diagnosis.aqb.notes.push(`支台部の高さは、軟組織の厚みや対合関係を考慮し選択してください。`);
                 } else {
-                     if (diagnosis.dangers.length === 0) {
-                        diagnosis.aqb.notes.push("利用可能な垂直的骨量に適した長さのAQBインプラントがありません。");
-                     }
+                    diagnosis.aqb.notes.push("骨幅に適したAQBインプラントの選択が困難です。GBRを必須とします。");
                 }
             } else {
-                diagnosis.aqb.notes.push("骨幅に適したAQBインプラントの選択が困難です。GBRを必須とします。");
+                 if (diagnosis.dangers.length === 0) {
+                    diagnosis.aqb.notes.push("利用可能な垂直的骨量に適した長さのAQBインプラントがありません。");
+                 }
             }
 
-            // ドリリングシーケンス
             switch(boneQuality) {
                 case 'D1': diagnosis.drilling = "【D1: 硬い骨】低速回転（700rpm以下）、十分な注水下で慎重にドリリング。骨のオーバーヒート（骨壊死）に最大限注意。最終ドリル径はインプラント径より0.1-0.3mm大きく形成し、埋入トルクを抑制。"; break;
                 case 'D2': diagnosis.drilling = "【D2: やや硬い骨】通常回転速度（800-1200rpm）でドリリング。最終ドリル径はインプラント径と同等か、わずかに（~0.2mm）小さく設定し、良好な初期固定を目指す。"; break;
                 case 'D3': diagnosis.drilling = "【D3: 一般的な骨】標準的なドリルシーケンス（基本800rpm）。最終ドリル径はインプラント径より0.5mm程度小さくし、圧入効果による初期固定の強化を図る。"; break;
                 case 'D4': diagnosis.drilling = "【D4: やや軟らかい骨】最小限のドリリング（パイロット～セカンドドリルまで）に留める。最終ドリル径をインプラント径より1.0mm程度小さくし、圧入効果を最大化する。オステオトームの使用も検討。"; break;
-                case 'D5': diagnosis.drilling = "【D5: 非常に軟らかい骨】最小限のドリル（パイロット、ファーストのみ）で対応。初期固定が得られない場合はGBR併用を前提とする。長めで太いインプラントが有利。"; break;
+                case 'D5': diagnosis.drilling = "【D5: 非常に軟らかい骨】最小限のドリル（パイロット、ファーストのみ）で対応。初期固定が得られない場合はGBR併用を前提とする。短めで太いインプラントが有利。"; break;
             }
 
             displayDiagnosis(diagnosis);
